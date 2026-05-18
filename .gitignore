@@ -134,3 +134,8 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+# ==========================================
+# 💥 紧急追加：死死卡住 WebStorm 和 VSCode 的本地缓存
+# ==========================================
+.idea/
+.vscode/
