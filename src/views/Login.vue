@@ -17,10 +17,15 @@
   </div>
 </template>
 
-<script setup lang="ts"> // 👈 注意这里：加了 lang="ts"
+<script setup lang="ts">
 import { ref } from 'vue'
-import request from '../api/request' // 这里会自动寻找 request.ts
+import request from '../api/request'
 import { ElMessage } from 'element-plus'
+// 👇 1. 新增：引入 vue-router 的路由跳转工具
+import { useRouter } from 'vue-router'
+
+// 👇 2. 新增：召唤路由管家实例
+const router = useRouter()
 
 // 定义表单绑定的数据结构
 const loginForm = ref({
@@ -31,18 +36,18 @@ const loginForm = ref({
 // 点击登录按钮触发
 const handleLogin = async () => {
   try {
-    // 调用后端的 POST /api/login 接口
     const res = await request.post('/api/login', {
       username: loginForm.value.username,
       password: loginForm.value.password
-    }) as any // 临时断言为 any，防止严格的 TS 抱怨 res 上找不到 data
+    }) as any
 
-    // 登录成功！把 Token 牢牢存在浏览器的 LocalStorage 里
+    // 登录成功！存 Token，弹提示
     localStorage.setItem('token', res.data.token)
     ElMessage.success('登录成功！')
-
-    // 在浏览器控制台打印一下，验证 Token 是否真的存进去了
     console.log('现在抽屉里的Token是：', localStorage.getItem('token'))
+
+    // 👇 3. 新增：万事俱备，让路由管家直接把我们推进 layout 大厅！
+    router.push('/layout')
 
   } catch (error) {
     console.error('登录失败：', error)
