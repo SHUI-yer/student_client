@@ -123,12 +123,24 @@
     │       # （统一注入 Token 与拦截异常码）
     │
     ├── views/
-    │   └── Login.vue
-    │       # 基于 Element Plus 响应式布局的登录控制中心
-    │
-    ├── main.ts
-    │       # 前端总管入口
-    │       # （全局注入 Element Plus 组件库与样式皮肤）
+│   ├── Login.vue
+│   │       # 基于 Element Plus 响应式布局的登录控制中心
+│   ├── Layout.vue
+│   │       # 后台管理主框架 (支持侧边栏高亮、面包屑、过渡动画)
+│   └── Student.vue
+│           # 学生管理全功能模块 (含 CRUD、分页、搜索、表单校验)
+│
+├── types/
+│   └── index.ts
+│           # 业务模型与接口响应的 TypeScript 类型定义
+│
+├── router/
+│   └── index.ts
+│           # 路由管家 (含 beforeEach 全局登录守卫)
+│
+├── main.ts
+│       # 前端总管入口
+│       # （全局注入 Element Plus 组件库与样式皮肤）
     │
     └── env.d.ts
             # TS 全局环境翻译官声明文件

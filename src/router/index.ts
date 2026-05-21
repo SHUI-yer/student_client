@@ -25,6 +25,11 @@ const routes = [
                 path: '/home',
                 name: 'Home',
                 component: () => import('../views/Home.vue')
+            },
+            {
+                path: '/student',
+                name: 'Student',
+                component: () => import('../views/Student.vue')
             }
             // 明天我们要写的学生列表页面，也会塞进这个 children 里面！
         ]
