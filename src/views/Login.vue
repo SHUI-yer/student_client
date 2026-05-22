@@ -41,13 +41,15 @@ const handleLogin = async () => {
       password: loginForm.value.password
     }) as any
 
-    // 登录成功！存 Token，弹提示
-    localStorage.setItem('token', res.data.token)
-    ElMessage.success('登录成功！')
-    console.log('现在抽屉里的Token是：', localStorage.getItem('token'))
-
-    // 👇 3. 新增：万事俱备，让路由管家直接把我们推进 layout 大厅！
-    router.push('/layout')
+    if (res.code === 200) {
+      // 这里的 res 已经是后端返回的 Result 对象了
+      // Token 嵌套在 res.data.token 中
+      localStorage.setItem('token', res.data.token)
+      ElMessage.success('登录成功！')
+      router.push('/layout')
+    } else {
+      ElMessage.error(res.message || '登录失败')
+    }
 
   } catch (error) {
     console.error('登录失败：', error)

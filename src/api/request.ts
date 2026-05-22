@@ -23,8 +23,8 @@ request.interceptors.request.use(config => {
 // 🛡️ 3. 响应拦截器（收快递前，检查后端有没有亮红牌）
 request.interceptors.response.use(
     response => {
-        // 状态码是 200，正常放行数据
-        return response
+        // 直接返回后端定义的 Result 对象内容
+        return response.data
     },
     error => {
         // 如果发生异常，捕获状态码

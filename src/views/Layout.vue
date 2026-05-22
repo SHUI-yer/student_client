@@ -22,6 +22,10 @@
           <el-icon><UserFilled /></el-icon>
           <span>学生信息管理</span>
         </el-menu-item>
+        <el-menu-item index="/course">
+          <el-icon><Management /></el-icon>
+          <span>课程信息管理</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -70,7 +74,7 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { HomeFilled, UserFilled, ArrowDown } from '@element-plus/icons-vue'
+import { HomeFilled, UserFilled, ArrowDown, Management } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -78,6 +82,7 @@ const route = useRoute()
 const currentRouteName = computed(() => {
   if (route.path === '/home') return '首页大厅'
   if (route.path === '/student') return '学生信息管理'
+  if (route.path === '/course') return '课程信息管理'
   return ''
 })
 

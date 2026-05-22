@@ -127,8 +127,10 @@
 │   │       # 基于 Element Plus 响应式布局的登录控制中心
 │   ├── Layout.vue
 │   │       # 后台管理主框架 (支持侧边栏高亮、面包屑、过渡动画)
-│   └── Student.vue
-│           # 学生管理全功能模块 (含 CRUD、分页、搜索、表单校验)
+│   ├── Student.vue
+│   │       # 学生管理全功能模块 (含 CRUD、分页、搜索、表单校验)
+│   └── Course.vue
+│           # 课程管理全功能模块 (Day 11-12 完成，支持全功能 CRUD)
 │
 ├── types/
 │   └── index.ts

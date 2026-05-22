@@ -8,6 +8,15 @@ export interface Student {
   className: string;
 }
 
+export interface Course {
+  id?: number;
+  courseNumber: string;
+  name: string;
+  credit: number;
+  teacher: string;
+  semester: string;
+}
+
 export interface ApiResponse<T> {
   code: number;
   message: string;
