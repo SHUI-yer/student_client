@@ -206,7 +206,7 @@ const handleEdit = (row: Course) => {
 const submitForm = async () => {
   if (!formRef.value) return
   
-  await formRef.value.validate(async (valid) => {
+  await formRef.value.validate(async (valid, fields) => {
     if (valid) {
       submitting.value = true
       try {
@@ -215,12 +215,17 @@ const submitForm = async () => {
           ElMessage.success(form.id ? '修改成功' : '新增成功')
           dialogVisible.value = false
           fetchData()
+        } else {
+          ElMessage.error(res.message || '操作失败')
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('提交失败:', error)
+        ElMessage.error(error.response?.data?.message || '服务器异常')
       } finally {
         submitting.value = false
       }
+    } else {
+      console.warn('表单校验未通过', fields)
     }
   })
 }
