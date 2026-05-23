@@ -35,6 +35,11 @@ const routes = [
                 path: '/course',
                 name: 'Course',
                 component: () => import('../views/Course.vue')
+            },
+            {
+                path: '/score',
+                name: 'Score',
+                component: () => import('../views/Score.vue')
             }
             // 明天我们要写的学生列表页面，也会塞进这个 children 里面！
         ]
