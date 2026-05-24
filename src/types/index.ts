@@ -6,6 +6,7 @@ export interface Student {
   age: number;
   major: string;
   className: string;
+  avatarUrl?: string;
 }
 
 export interface Course {

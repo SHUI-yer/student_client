@@ -29,14 +29,55 @@
             <el-icon><Refresh /></el-icon>
             刷新
           </el-button>
+          <el-dropdown style="margin-left: 12px">
+            <el-button>
+              Excel操作<el-icon class="el-icon--right"><arrow-down /></el-icon>
+            </el-button>
+            <template #header></template>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item @click="downloadTemplate">下载导入模板</el-dropdown-item>
+                <el-dropdown-item @click="triggerImport">
+                  批量导入数据
+                  <el-tooltip
+                    effect="dark"
+                    placement="top"
+                    content="格式：姓名、学号、性别、年龄、专业、班级。请确保学号唯一。"
+                  >
+                    <el-icon class="info-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </el-dropdown-item>
+                <el-dropdown-item @click="exportData" divided>导出全部数据</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+          <!-- 隐藏的文件上传 input -->
+          <input
+            ref="excelInput"
+            type="file"
+            style="display: none"
+            accept=".xlsx, .xls"
+            @change="handleImport"
+          />
         </div>
       </div>
     </el-card>
 
     <!-- 数据表格 -->
     <el-card class="table-card" shadow="never">
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
-        <el-table-column type="index" label="序号" width="60" align="center" />
+      <!-- 骨架屏加载 -->
+      <el-skeleton :rows="10" animated :loading="loading">
+        <template #default>
+          <el-table :data="tableData" stripe border style="width: 100%">
+            <el-table-column type="index" label="序号" width="60" align="center" />
+        <el-table-column label="头像" width="80" align="center">
+          <template #default="scope">
+            <el-avatar 
+              :size="40" 
+              :src="scope.row.avatarUrl ? `http://localhost:8080${scope.row.avatarUrl}` : 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" 
+            />
+          </template>
+        </el-table-column>
         <el-table-column prop="studentNumber" label="学号" width="140" sortable />
         <el-table-column prop="name" label="姓名" width="120" />
         <el-table-column prop="gender" label="性别" width="80" align="center">
@@ -53,9 +94,11 @@
           <template #default="scope">
             <el-button link type="primary" @click="handleEdit(scope.row)">编辑</el-button>
             <el-button link type="danger" @click="handleDelete(scope.row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+            </template>
+          </el-table-column>
+        </el-table>
+        </template>
+      </el-skeleton>
 
       <!-- 分页器 -->
       <div class="pagination-container">
@@ -85,6 +128,19 @@
         label-width="100px" 
         status-icon
       >
+        <el-form-item label="学生头像">
+          <el-upload
+            class="avatar-uploader"
+            action="http://localhost:8080/api/file/upload"
+            :show-file-list="false"
+            :on-success="handleAvatarSuccess"
+            :before-upload="beforeAvatarUpload"
+            :headers="uploadHeaders"
+          >
+            <img v-if="form.avatarUrl" :src="`http://localhost:8080${form.avatarUrl}`" class="avatar" />
+            <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
+          </el-upload>
+        </el-form-item>
         <el-form-item label="学号" prop="studentNumber">
           <el-input v-model="form.studentNumber" placeholder="例如：20230001" />
         </el-form-item>
@@ -120,10 +176,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, computed } from 'vue'
 import request from '../api/request'
-import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
-import { Search, Plus, Refresh } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox, type FormInstance, type UploadProps } from 'element-plus'
+import { Search, Plus, Refresh, ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
 import type { Student, ApiResponse, PageResult } from '../types'
 
 // 1. 基础状态
@@ -134,6 +190,7 @@ const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const searchKeyword = ref('')
+const excelInput = ref<HTMLInputElement | null>(null)
 
 // 2. 表单相关
 const dialogVisible = ref(false)
@@ -145,8 +202,40 @@ const form = reactive<Student>({
   gender: '男',
   age: 18,
   major: '',
-  className: ''
+  className: '',
+  avatarUrl: ''
 })
+
+// 头像上传的请求头 (携带 Token)
+const uploadHeaders = computed(() => {
+  return {
+    Authorization: `Bearer ${localStorage.getItem('token')}`
+  }
+})
+
+// 头像上传成功回调
+const handleAvatarSuccess: UploadProps['onSuccess'] = (response) => {
+  if (response.code === 200) {
+    form.avatarUrl = response.data
+    ElMessage.success('头像上传成功')
+  } else {
+    ElMessage.error(response.message || '上传失败')
+  }
+}
+
+// 头像上传前校验
+const beforeAvatarUpload: UploadProps['beforeUpload'] = (file) => {
+  const isJPGorPNG = file.type === 'image/jpeg' || file.type === 'image/png'
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isJPGorPNG) {
+    ElMessage.error('上传头像图片只能是 JPG 或 PNG 格式!')
+  }
+  if (!isLt2M) {
+    ElMessage.error('上传头像图片大小不能超过 2MB!')
+  }
+  return isJPGorPNG && isLt2M
+}
 
 // 表单校验规则
 const rules = {
@@ -203,7 +292,8 @@ const handleAdd = () => {
     gender: '男',
     age: 18,
     major: '',
-    className: ''
+    className: '',
+    avatarUrl: ''
   })
   dialogVisible.value = true
 }
@@ -259,6 +349,44 @@ const handleDelete = (row: Student) => {
   }).catch(() => {})
 }
 
+// 5. Excel 操作
+const downloadTemplate = () => {
+  window.open('http://localhost:8080/api/excel/template/student', '_blank')
+}
+
+const exportData = () => {
+  window.open('http://localhost:8080/api/excel/export/student', '_blank')
+}
+
+const triggerImport = () => {
+  excelInput.value?.click()
+}
+
+const handleImport = async (e: Event) => {
+  const files = (e.target as HTMLInputElement).files
+  if (!files || files.length === 0) return
+
+  const formData = new FormData()
+  formData.append('file', files[0])
+
+  loading.value = true
+  try {
+    const res = await request.post('/api/excel/import/student', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }) as any
+    if (res.code === 200) {
+      ElMessage.success('数据导入成功')
+      fetchData()
+    }
+  } catch (error) {
+    console.error('导入失败:', error)
+    ElMessage.error('Excel 导入失败')
+  } finally {
+    loading.value = false
+    if (excelInput.value) excelInput.value.value = ''
+  }
+}
+
 onMounted(() => {
   fetchData()
 })
@@ -297,5 +425,35 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+/* 头像上传组件样式 */
+.avatar-uploader .avatar {
+  width: 100px;
+  height: 100px;
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-uploader :deep(.el-upload) {
+  border: 1px dashed var(--el-border-color);
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: var(--el-transition-duration-fast);
+}
+
+.avatar-uploader :deep(.el-upload:hover) {
+  border-color: var(--el-color-primary);
+}
+
+.el-icon.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 100px;
+  height: 100px;
+  text-align: center;
 }
 </style>

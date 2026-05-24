@@ -2,15 +2,30 @@
   <div class="login-container">
     <el-card class="login-card">
       <h2>学生管理系统 - 登录</h2>
-      <el-form :model="loginForm" label-width="0px">
-        <el-form-item>
-          <el-input v-model="loginForm.username" placeholder="请输入用户名" />
+      <el-form ref="formRef" :model="loginForm" :rules="rules" label-width="0px" class="md-form">
+        <el-form-item prop="username">
+          <el-input 
+            v-model="loginForm.username" 
+            placeholder="请输入用户名" 
+            @keyup.enter="focusPassword"
+            class="md-input"
+          />
+        </el-form-item>
+        <el-form-item prop="password">
+          <el-input 
+            ref="passwordInputRef"
+            v-model="loginForm.password" 
+            type="password" 
+            placeholder="请输入密码" 
+            show-password 
+            @keyup.enter="handleLogin"
+            class="md-input"
+          />
         </el-form-item>
         <el-form-item>
-          <el-input v-model="loginForm.password" type="password" placeholder="请输入密码" show-password />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" class="login-btn" @click="handleLogin">登录</el-button>
+          <el-button type="primary" class="login-btn md-button" :loading="loading" @click="handleLogin">
+            登录
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -27,15 +42,51 @@ import { useRouter } from 'vue-router'
 // 👇 2. 新增：召唤路由管家实例
 const router = useRouter()
 
+// 获取表单和密码输入框的引用
+const formRef = ref()
+const passwordInputRef = ref()
+
+// 按钮加载状态
+const loading = ref(false)
+
 // 定义表单绑定的数据结构
 const loginForm = ref({
   username: '',
   password: ''
 })
 
+// 表单校验规则
+const rules = {
+  username: [
+    { required: true, message: '用户名不能为空', trigger: 'blur' },
+    { min: 3, max: 20, message: '长度在 3 到 20 个字符', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '密码不能为空', trigger: 'blur' },
+    { min: 6, max: 20, message: '长度在 6 到 20 个字符', trigger: 'blur' }
+  ]
+}
+
+// 切换焦点到密码输入框
+const focusPassword = () => {
+  if (passwordInputRef.value) {
+    passwordInputRef.value.focus()
+  }
+}
+
 // 点击登录按钮触发
 const handleLogin = async () => {
-  try {
+  if (!formRef.value) return
+  
+  // 校验表单
+  await formRef.value.validate(async (valid: boolean) => {
+    if (!valid) {
+      ElMessage.warning('请检查输入数据是否合法')
+      return
+    }
+    
+    loading.value = true
+    try {
     const res = await request.post('/api/login', {
       username: loginForm.value.username,
       password: loginForm.value.password
@@ -53,7 +104,10 @@ const handleLogin = async () => {
 
   } catch (error) {
     console.error('登录失败：', error)
+  } finally {
+    loading.value = false
   }
+  })
 }
 </script>
 
@@ -63,17 +117,78 @@ const handleLogin = async () => {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background-color: #f5f7fa;
+  background-color: var(--bg-secondary);
+  position: relative;
+  overflow: hidden;
 }
-.login-card {
+
+.login-container::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  right: -100px;
   width: 400px;
-  text-align: center;
+  height: 400px;
+  background: var(--md-primary-light);
+  border-radius: 50%;
+  filter: blur(40px);
 }
+
+.login-card {
+  width: 420px;
+  text-align: center;
+  border-radius: var(--md-radius-lg);
+  box-shadow: var(--md-shadow-3);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  background-color: var(--bg-tertiary);
+  padding: 22px 14px;
+  transition: var(--md-transition);
+}
+
+.login-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--md-shadow-3);
+}
+
 h2 {
   margin-bottom: 30px;
-  color: #303133;
+  color: var(--text-primary);
+  font-weight: 600;
+  letter-spacing: 1px;
 }
+
 .login-btn {
   width: 100%;
+  height: 48px;
+  border-radius: 24px;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  background: var(--md-primary);
+  border: none;
+  box-shadow: var(--md-shadow-2);
+  transition: var(--md-transition);
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--md-shadow-3);
+  background: var(--md-primary-hover);
+}
+
+.login-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--md-shadow-2);
+}
+
+:deep(.el-input__wrapper) {
+  border-radius: var(--md-radius-md);
+  box-shadow: var(--md-shadow-1);
+  transition: var(--md-transition);
+  padding: 8px 12px;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 2px var(--md-primary-light), var(--md-shadow-2);
 }
 </style>

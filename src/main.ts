@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import App from './App.vue'
+import './style.css' // 引入全局样式文件
 
 //引入 Element Plus 组件库和它的全套精美皮肤（样式）
 

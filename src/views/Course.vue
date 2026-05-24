@@ -29,26 +29,60 @@
             <el-icon><Refresh /></el-icon>
             刷新
           </el-button>
+          <el-dropdown style="margin-left: 12px">
+            <el-button>
+              Excel操作<el-icon class="el-icon--right"><arrow-down /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item @click="downloadTemplate">下载导入模板</el-dropdown-item>
+                <el-dropdown-item @click="triggerImport">
+                  批量导入数据
+                  <el-tooltip
+                    effect="dark"
+                    placement="top"
+                    content="格式：课程编号、课程名称、学分、授课教师、学期。"
+                  >
+                    <el-icon class="info-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </el-dropdown-item>
+                <el-dropdown-item @click="exportData" divided>导出全部数据</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+          <!-- 隐藏的文件上传 input -->
+          <input
+            ref="excelInput"
+            type="file"
+            style="display: none"
+            accept=".xlsx, .xls"
+            @change="handleImport"
+          />
         </div>
       </div>
     </el-card>
 
     <!-- 数据表格 -->
     <el-card class="table-card" shadow="never">
-      <el-table :data="tableData" v-loading="loading" stripe border style="width: 100%">
-        <el-table-column type="index" label="序号" width="60" align="center" />
-        <el-table-column prop="courseNumber" label="课程号" width="140" sortable />
-        <el-table-column prop="name" label="课程名称" width="180" />
-        <el-table-column prop="credit" label="学分" width="80" align="center" />
-        <el-table-column prop="teacher" label="授课教师" width="120" />
-        <el-table-column prop="semester" label="开课学期" />
-        <el-table-column label="操作" width="160" fixed="right" align="center">
-          <template #default="scope">
-            <el-button link type="primary" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button link type="danger" @click="handleDelete(scope.row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <!-- 骨架屏加载 -->
+      <el-skeleton :rows="10" animated :loading="loading">
+        <template #default>
+          <el-table :data="tableData" stripe border style="width: 100%">
+            <el-table-column type="index" label="序号" width="60" align="center" />
+            <el-table-column prop="courseNumber" label="课程号" width="140" sortable />
+            <el-table-column prop="name" label="课程名称" width="180" />
+            <el-table-column prop="credit" label="学分" width="80" align="center" />
+            <el-table-column prop="teacher" label="授课教师" width="120" />
+            <el-table-column prop="semester" label="开课学期" />
+            <el-table-column label="操作" width="160" fixed="right" align="center">
+              <template #default="scope">
+                <el-button link type="primary" @click="handleEdit(scope.row)">编辑</el-button>
+                <el-button link type="danger" @click="handleDelete(scope.row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </template>
+      </el-skeleton>
 
       <!-- 分页器 -->
       <div class="pagination-container">
@@ -114,7 +148,7 @@
 import { ref, onMounted, reactive } from 'vue'
 import request from '../api/request'
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
-import { Search, Plus, Refresh } from '@element-plus/icons-vue'
+import { Search, Plus, Refresh, ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
 import type { Course, ApiResponse, PageResult } from '../types'
 
 // 1. 基础状态
@@ -125,6 +159,7 @@ const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
 const searchKeyword = ref('')
+const excelInput = ref<HTMLInputElement | null>(null)
 
 // 2. 表单相关
 const dialogVisible = ref(false)
@@ -247,6 +282,44 @@ const handleDelete = (row: Course) => {
       console.error('删除失败:', error)
     }
   }).catch(() => {})
+}
+
+// 5. Excel 操作
+const downloadTemplate = () => {
+  window.open('http://localhost:8080/api/excel/template/course', '_blank')
+}
+
+const exportData = () => {
+  window.open('http://localhost:8080/api/excel/export/course', '_blank')
+}
+
+const triggerImport = () => {
+  excelInput.value?.click()
+}
+
+const handleImport = async (e: Event) => {
+  const files = (e.target as HTMLInputElement).files
+  if (!files || files.length === 0) return
+
+  const formData = new FormData()
+  formData.append('file', files[0])
+
+  loading.value = true
+  try {
+    const res = await request.post('/api/excel/import/course', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }) as any
+    if (res.code === 200) {
+      ElMessage.success('课程数据导入成功')
+      fetchData()
+    }
+  } catch (error) {
+    console.error('导入失败:', error)
+    ElMessage.error('Excel 导入失败')
+  } finally {
+    loading.value = false
+    if (excelInput.value) excelInput.value.value = ''
+  }
 }
 
 onMounted(() => {

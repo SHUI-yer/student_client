@@ -40,9 +40,34 @@ const routes = [
                 path: '/score',
                 name: 'Score',
                 component: () => import('../views/Score.vue')
+            },
+            {
+                path: '/dashboard',
+                name: 'Dashboard',
+                component: () => import('../views/Dashboard.vue')
+            },
+            {
+                path: '/intro/student',
+                name: 'IntroStudent',
+                component: () => import('../views/IntroStudent.vue')
+            },
+            {
+                path: '/intro/course-score',
+                name: 'IntroCourseScore',
+                component: () => import('../views/IntroCourseScore.vue')
+            },
+            {
+                path: '/intro/ux',
+                name: 'IntroUx',
+                component: () => import('../views/IntroUx.vue')
             }
-            // 明天我们要写的学生列表页面，也会塞进这个 children 里面！
         ]
+    },
+    {
+        // 捕获所有未匹配的路由，重定向到 404 页面
+        path: '/:pathMatch(.*)*',
+        name: 'NotFound',
+        component: () => import('../views/NotFound.vue')
     }
 ]
 
@@ -60,10 +85,15 @@ router.beforeEach((to, _from, next) => {
     if (to.path === '/login') {
         return next()
     }
+    
+    // 如果没有匹配到路由，直接放行，让路由处理 404
+    if (to.name === 'NotFound') {
+        return next()
+    }
 
     // 非法硬闯拦截：去其他页面但没带 Token，踹回登录页
     if (!token) {
-        ElMessage.warning('🚫 请先登录系统！')
+        ElMessage.warning('请先登录系统！')
         return next('/login')
     }
 

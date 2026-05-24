@@ -15,34 +15,73 @@
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetSearch">重置</el-button>
           <el-button type="success" @click="handleAdd">录入成绩</el-button>
+          <el-dropdown style="margin-left: 12px">
+            <el-button type="warning">
+              Excel操作<el-icon class="el-icon--right"><arrow-down /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item @click="downloadTemplate">下载导入模板</el-dropdown-item>
+                <el-dropdown-item @click="triggerImport">
+                  批量导入成绩
+                  <el-tooltip
+                    effect="dark"
+                    placement="top"
+                    content="格式：学号、课程编号、百分制成绩。系统会自动换算学分绩点。"
+                  >
+                    <el-icon class="info-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </el-dropdown-item>
+                <el-dropdown-item @click="exportScore" divided>导出全部成绩</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+          <!-- 隐藏的文件上传 input -->
+          <input
+            ref="excelInput"
+            type="file"
+            style="display: none"
+            accept=".xlsx, .xls"
+            @change="handleImport"
+          />
         </el-form-item>
       </el-form>
     </el-card>
 
     <!-- 表格区域 -->
     <el-card shadow="never" class="table-card">
-      <el-table :data="tableData" v-loading="loading" style="width: 100%" border>
-        <el-table-column prop="id" label="ID" width="80" align="center" />
-        <el-table-column prop="studentNumber" label="学号" width="150" align="center" />
-        <el-table-column prop="studentName" label="学生姓名" width="120" align="center" />
-        <el-table-column prop="major" label="专业" width="150" align="center" />
-        <el-table-column prop="courseNumber" label="课程号" width="120" align="center" />
-        <el-table-column prop="courseName" label="课程名称" min-width="150" align="center" />
-        <el-table-column prop="credit" label="学分" width="80" align="center" />
-        <el-table-column prop="score" label="成绩" width="100" align="center">
-          <template #default="scope">
-            <el-tag :type="scope.row.score >= 60 ? 'success' : 'danger'">
-              {{ scope.row.score }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="150" align="center" fixed="right">
-          <template #default="scope">
-            <el-button link type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(scope.row.id)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <!-- 骨架屏加载 -->
+      <el-skeleton :rows="10" animated :loading="loading">
+        <template #default>
+          <el-table :data="tableData" style="width: 100%" border>
+            <el-table-column prop="id" label="ID" width="80" align="center" />
+            <el-table-column prop="studentNumber" label="学号" width="150" align="center" />
+            <el-table-column prop="studentName" label="学生姓名" width="120" align="center" />
+            <el-table-column prop="major" label="专业" width="150" align="center" />
+            <el-table-column prop="courseNumber" label="课程号" width="120" align="center" />
+            <el-table-column prop="courseName" label="课程名称" min-width="150" align="center" />
+            <el-table-column prop="credit" label="学分" width="80" align="center" />
+            <el-table-column prop="originalScore" label="原始成绩(100)" width="120" align="center">
+              <template #default="scope">
+                <el-tag :type="scope.row.originalScore >= 60 ? 'success' : 'danger'">
+                  {{ scope.row.originalScore }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="score" label="学分得分" width="100" align="center">
+              <template #default="scope">
+                <span style="font-weight: bold; color: var(--md-primary)">{{ scope.row.score }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="150" align="center" fixed="right">
+              <template #default="scope">
+                <el-button link type="primary" size="small" @click="handleEdit(scope.row)">编辑</el-button>
+                <el-button link type="danger" size="small" @click="handleDelete(scope.row.id)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </template>
+      </el-skeleton>
 
       <!-- 分页区域 -->
       <div class="pagination-container">
@@ -86,13 +125,16 @@
             <el-option
               v-for="item in courseList"
               :key="item.id"
-              :label="item.name + ' (' + item.courseNumber + ')'"
+              :label="item.name + ' (' + item.courseNumber + ') - ' + item.credit + '学分'"
               :value="item.id"
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="成绩" prop="score">
-          <el-input-number v-model="formData.score" :min="0" :max="100" :precision="1" :step="1" style="width: 100%" />
+        <el-form-item label="百分制成绩" prop="originalScore">
+          <el-input-number v-model="formData.originalScore" :min="0" :max="100" :precision="1" :step="1" style="width: 100%" />
+          <div class="score-tip" v-if="formData.courseId && formData.originalScore !== undefined">
+            预计折算学分成绩：<span style="color: var(--md-primary); font-weight: bold;">{{ (formData.originalScore * maxScore / 100).toFixed(2) }}</span>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -106,10 +148,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
 import { getScorePage, saveScore, deleteScore, getAllStudents, getAllCourses } from '../api/score'
+import request from '../api/request'
 
 // -- 变量定义 --
 const loading = ref(false)
@@ -117,6 +161,7 @@ const tableData = ref([])
 const total = ref(0)
 const studentList = ref<any[]>([])
 const courseList = ref<any[]>([])
+const excelInput = ref<HTMLInputElement | null>(null)
 
 const searchForm = reactive({
   keyword: ''
@@ -136,13 +181,35 @@ const formData = reactive({
   id: undefined as number | undefined,
   studentId: undefined as number | undefined,
   courseId: undefined as number | undefined,
+  originalScore: 0,
   score: 0
 })
+
+// 计算当前选中课程的最高学分（分数上限）
+const maxScore = computed(() => {
+  if (!formData.courseId) return 100
+  const course = courseList.value.find(c => c.id === formData.courseId)
+  return course ? course.credit : 100
+})
+
+// 自定义成绩校验器
+const validateScore = (rule: any, value: any, callback: any) => {
+  if (value === undefined || value === null) {
+    callback(new Error('请输入成绩'))
+  } else if (value > 100) {
+    callback(new Error('成绩不能超过100分'))
+  } else {
+    callback()
+  }
+}
 
 const rules = reactive<FormRules>({
   studentId: [{ required: true, message: '请选择学生', trigger: 'change' }],
   courseId: [{ required: true, message: '请选择课程', trigger: 'change' }],
-  score: [{ required: true, message: '请输入成绩', trigger: 'blur' }]
+  originalScore: [
+    { required: true, message: '请输入百分制成绩', trigger: 'blur' },
+    { validator: validateScore, trigger: 'blur' }
+  ]
 })
 
 // -- 方法定义 --
@@ -202,6 +269,7 @@ const handleAdd = () => {
     id: undefined,
     studentId: undefined,
     courseId: undefined,
+    originalScore: 0,
     score: 0
   })
   dialogVisible.value = true
@@ -213,6 +281,7 @@ const handleEdit = (row: any) => {
     id: row.id,
     studentId: row.studentId,
     courseId: row.courseId,
+    originalScore: row.originalScore,
     score: row.score
   })
   dialogVisible.value = true
@@ -259,6 +328,43 @@ const submitForm = async () => {
       }
     }
   })
+}
+
+const exportScore = () => {
+  window.open('http://localhost:8080/api/excel/export/score', '_blank')
+}
+
+const downloadTemplate = () => {
+  window.open('http://localhost:8080/api/excel/template/score', '_blank')
+}
+
+const triggerImport = () => {
+  excelInput.value?.click()
+}
+
+const handleImport = async (e: Event) => {
+  const files = (e.target as HTMLInputElement).files
+  if (!files || files.length === 0) return
+
+  const formData = new FormData()
+  formData.append('file', files[0])
+
+  loading.value = true
+  try {
+    const res = await request.post('/api/excel/import/score', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }) as any
+    if (res.code === 200) {
+      ElMessage.success('成绩数据导入成功')
+      loadData()
+    }
+  } catch (error) {
+    console.error('导入失败:', error)
+    ElMessage.error('Excel 导入失败')
+  } finally {
+    loading.value = false
+    if (excelInput.value) excelInput.value.value = ''
+  }
 }
 
 const handleDialogClose = () => {

@@ -36,12 +36,18 @@ request.interceptors.response.use(
                 localStorage.removeItem('token')
                 // 2. 强行扭送回登录页
                 router.push('/login')
+            } else if (error.response.status === 404) {
+                ElMessage.error('请求的接口不存在 (404)')
+            } else if (error.response.status === 500) {
+                // 优先取后端返回的错误信息，如果没有则给通用提示
+                ElMessage.error(error.response.data?.message || '后端服务器异常，请联系管理员 (500)')
             } else {
-                // 其他错误 (如 404, 500)
-                ElMessage.error(error.response.data || '系统服务器异常，请稍后再试')
+                // 其他错误 (如 400, 403)
+                ElMessage.error(error.response.data?.message || error.response.data || '系统服务器异常，请稍后再试')
             }
         } else {
-            ElMessage.error('网络连接失败，请检查后端服务是否启动')
+            // 如果连 error.response 都没有，说明网络断了或者后端完全没响应（比如跨域问题）
+            ElMessage.error(error.message === 'Network Error' ? '网络连接失败，请检查后端服务是否启动' : '请求超时或网络异常')
         }
         return Promise.reject(error)
     }
