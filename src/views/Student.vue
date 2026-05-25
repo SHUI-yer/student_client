@@ -48,6 +48,7 @@
                   </el-tooltip>
                 </el-dropdown-item>
                 <el-dropdown-item @click="exportData" divided>导出全部数据</el-dropdown-item>
+                <el-dropdown-item @click="showExportFilter = true">按条件筛选导出</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -63,12 +64,39 @@
       </div>
     </el-card>
 
+    <!-- 筛选导出对话框 -->
+    <el-dialog
+      v-model="showExportFilter"
+      title="筛选导出学生数据"
+      width="400px"
+    >
+      <el-form label-width="80px">
+        <el-form-item label="专业">
+          <el-select v-model="filterMajor" placeholder="选择专业(可选)" clearable style="width: 100%">
+            <el-option v-for="m in uniqueMajors" :key="m" :label="m" :value="m" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="班级">
+          <el-select v-model="filterClass" placeholder="选择班级(可选)" clearable style="width: 100%">
+            <el-option v-for="c in uniqueClasses" :key="c" :label="c" :value="c" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showExportFilter = false">取消</el-button>
+        <el-button type="primary" @click="handleFilteredExport">确认导出</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 数据表格 -->
     <el-card class="table-card" shadow="never">
       <!-- 骨架屏加载 -->
       <el-skeleton :rows="10" animated :loading="loading">
         <template #default>
           <el-table :data="tableData" stripe border style="width: 100%">
+            <template #empty>
+              <EmptyState />
+            </template>
             <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column label="头像" width="80" align="center">
           <template #default="scope">
@@ -180,6 +208,7 @@ import { ref, onMounted, reactive, computed } from 'vue'
 import request from '../api/request'
 import { ElMessage, ElMessageBox, type FormInstance, type UploadProps } from 'element-plus'
 import { Search, Plus, Refresh, ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
+import EmptyState from '../components/EmptyState.vue'
 import type { Student, ApiResponse, PageResult } from '../types'
 
 // 1. 基础状态
@@ -192,7 +221,22 @@ const pageSize = ref(10)
 const searchKeyword = ref('')
 const excelInput = ref<HTMLInputElement | null>(null)
 
-// 2. 表单相关
+// 2. 导出筛选相关
+const showExportFilter = ref(false)
+const filterMajor = ref('')
+const filterClass = ref('')
+
+const uniqueMajors = computed(() => {
+  const majors = tableData.value.map(s => s.major).filter(Boolean)
+  return Array.from(new Set(majors))
+})
+
+const uniqueClasses = computed(() => {
+  const classes = tableData.value.map(s => s.className).filter(Boolean)
+  return Array.from(new Set(classes))
+})
+
+// 3. 表单相关
 const dialogVisible = ref(false)
 const formRef = ref<FormInstance>()
 const form = reactive<Student>({
@@ -356,6 +400,14 @@ const downloadTemplate = () => {
 
 const exportData = () => {
   window.open('http://localhost:8080/api/excel/export/student', '_blank')
+}
+
+const handleFilteredExport = () => {
+  let url = 'http://localhost:8080/api/excel/export/student?'
+  if (filterMajor.value) url += `major=${encodeURIComponent(filterMajor.value)}&`
+  if (filterClass.value) url += `className=${encodeURIComponent(filterClass.value)}&`
+  window.open(url, '_blank')
+  showExportFilter.value = false
 }
 
 const triggerImport = () => {

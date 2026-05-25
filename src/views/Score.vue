@@ -33,6 +33,7 @@
                   </el-tooltip>
                 </el-dropdown-item>
                 <el-dropdown-item @click="exportScore" divided>导出全部成绩</el-dropdown-item>
+                <el-dropdown-item @click="showExportFilter = true">按条件筛选导出</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -48,12 +49,40 @@
       </el-form>
     </el-card>
 
+    <!-- 筛选导出对话框 -->
+    <el-dialog
+      v-model="showExportFilter"
+      title="筛选导出成绩数据"
+      width="400px"
+    >
+      <el-form label-width="80px">
+        <el-form-item label="专业">
+          <el-select v-model="filterMajor" placeholder="选择专业(可选)" clearable style="width: 100%">
+            <el-option v-for="m in uniqueMajors" :key="m" :label="m" :value="m" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="学号">
+          <el-input v-model="filterStudentNumber" placeholder="输入学号(可选)" clearable />
+        </el-form-item>
+        <el-form-item label="课程号">
+          <el-input v-model="filterCourseNumber" placeholder="输入课程号(可选)" clearable />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showExportFilter = false">取消</el-button>
+        <el-button type="primary" @click="handleFilteredExport">确认导出</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 表格区域 -->
     <el-card shadow="never" class="table-card">
       <!-- 骨架屏加载 -->
       <el-skeleton :rows="10" animated :loading="loading">
         <template #default>
           <el-table :data="tableData" style="width: 100%" border>
+            <template #empty>
+              <EmptyState title="未查询到成绩" description="暂无该学生的成绩记录或该课程尚未录入成绩" />
+            </template>
             <el-table-column prop="id" label="ID" width="80" align="center" />
             <el-table-column prop="studentNumber" label="学号" width="150" align="center" />
             <el-table-column prop="studentName" label="学生姓名" width="120" align="center" />
@@ -152,6 +181,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
+import EmptyState from '../components/EmptyState.vue'
 import { getScorePage, saveScore, deleteScore, getAllStudents, getAllCourses } from '../api/score'
 import request from '../api/request'
 
@@ -162,6 +192,17 @@ const total = ref(0)
 const studentList = ref<any[]>([])
 const courseList = ref<any[]>([])
 const excelInput = ref<HTMLInputElement | null>(null)
+
+// 导出筛选相关
+const showExportFilter = ref(false)
+const filterMajor = ref('')
+const filterStudentNumber = ref('')
+const filterCourseNumber = ref('')
+
+const uniqueMajors = computed(() => {
+  const majors = tableData.value.map((s: any) => s.major).filter(Boolean)
+  return Array.from(new Set(majors))
+})
 
 const searchForm = reactive({
   keyword: ''
@@ -193,7 +234,7 @@ const maxScore = computed(() => {
 })
 
 // 自定义成绩校验器
-const validateScore = (rule: any, value: any, callback: any) => {
+const validateScore = (_rule: any, value: any, callback: any) => {
   if (value === undefined || value === null) {
     callback(new Error('请输入成绩'))
   } else if (value > 100) {
@@ -332,6 +373,15 @@ const submitForm = async () => {
 
 const exportScore = () => {
   window.open('http://localhost:8080/api/excel/export/score', '_blank')
+}
+
+const handleFilteredExport = () => {
+  let url = 'http://localhost:8080/api/excel/export/score?'
+  if (filterMajor.value) url += `major=${encodeURIComponent(filterMajor.value)}&`
+  if (filterStudentNumber.value) url += `studentNumber=${encodeURIComponent(filterStudentNumber.value)}&`
+  if (filterCourseNumber.value) url += `courseNumber=${encodeURIComponent(filterCourseNumber.value)}&`
+  window.open(url, '_blank')
+  showExportFilter.value = false
 }
 
 const downloadTemplate = () => {

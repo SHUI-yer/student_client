@@ -47,6 +47,7 @@
                   </el-tooltip>
                 </el-dropdown-item>
                 <el-dropdown-item @click="exportData" divided>导出全部数据</el-dropdown-item>
+                <el-dropdown-item @click="showExportFilter = true">按条件筛选导出</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -62,12 +63,39 @@
       </div>
     </el-card>
 
+    <!-- 筛选导出对话框 -->
+    <el-dialog
+      v-model="showExportFilter"
+      title="筛选导出课程数据"
+      width="400px"
+    >
+      <el-form label-width="80px">
+        <el-form-item label="开课学期">
+          <el-select v-model="filterSemester" placeholder="选择学期(可选)" clearable style="width: 100%">
+            <el-option v-for="s in uniqueSemesters" :key="s" :label="s" :value="s" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="授课教师">
+          <el-select v-model="filterTeacher" placeholder="选择教师(可选)" clearable style="width: 100%">
+            <el-option v-for="t in uniqueTeachers" :key="t" :label="t" :value="t" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showExportFilter = false">取消</el-button>
+        <el-button type="primary" @click="handleFilteredExport">确认导出</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 数据表格 -->
     <el-card class="table-card" shadow="never">
       <!-- 骨架屏加载 -->
       <el-skeleton :rows="10" animated :loading="loading">
         <template #default>
           <el-table :data="tableData" stripe border style="width: 100%">
+            <template #empty>
+              <EmptyState title="未发现课程" description="该搜索条件下没有找到任何相关课程" />
+            </template>
             <el-table-column type="index" label="序号" width="60" align="center" />
             <el-table-column prop="courseNumber" label="课程号" width="140" sortable />
             <el-table-column prop="name" label="课程名称" width="180" />
@@ -145,10 +173,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from 'vue'
+import { ref, onMounted, reactive, computed } from 'vue'
 import request from '../api/request'
 import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
 import { Search, Plus, Refresh, ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
+import EmptyState from '../components/EmptyState.vue'
 import type { Course, ApiResponse, PageResult } from '../types'
 
 // 1. 基础状态
@@ -161,7 +190,22 @@ const pageSize = ref(10)
 const searchKeyword = ref('')
 const excelInput = ref<HTMLInputElement | null>(null)
 
-// 2. 表单相关
+// 2. 导出筛选相关
+const showExportFilter = ref(false)
+const filterSemester = ref('')
+const filterTeacher = ref('')
+
+const uniqueSemesters = computed(() => {
+  const semesters = tableData.value.map(c => c.semester).filter(Boolean)
+  return Array.from(new Set(semesters))
+})
+
+const uniqueTeachers = computed(() => {
+  const teachers = tableData.value.map(c => c.teacher).filter(Boolean)
+  return Array.from(new Set(teachers))
+})
+
+// 3. 表单相关
 const dialogVisible = ref(false)
 const formRef = ref<FormInstance>()
 const form = reactive<Course>({
@@ -291,6 +335,14 @@ const downloadTemplate = () => {
 
 const exportData = () => {
   window.open('http://localhost:8080/api/excel/export/course', '_blank')
+}
+
+const handleFilteredExport = () => {
+  let url = 'http://localhost:8080/api/excel/export/course?'
+  if (filterSemester.value) url += `semester=${encodeURIComponent(filterSemester.value)}&`
+  if (filterTeacher.value) url += `teacher=${encodeURIComponent(filterTeacher.value)}&`
+  window.open(url, '_blank')
+  showExportFilter.value = false
 }
 
 const triggerImport = () => {

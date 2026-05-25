@@ -93,14 +93,13 @@ import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { HomeFilled, UserFilled, ArrowDown, Management, List, Moon, Sunny, School, DataAnalysis } from '@element-plus/icons-vue'
-import { useDark, useToggle } from '@vueuse/core'
+import { useDark } from '@vueuse/core'
 
 const router = useRouter()
 const route = useRoute()
 
 // 引入暗黑模式 hook
 const isDark = useDark()
-const toggleDark = useToggle(isDark)
 
 const currentRouteName = computed(() => {
   if (route.path === '/home') return '首页大厅'

@@ -1,6 +1,10 @@
 <template>
   <div class="login-container">
-    <el-card class="login-card">
+    <transition name="fade">
+      <LegoLoader v-if="showSplash" />
+    </transition>
+    
+    <el-card class="login-card" v-show="!showSplash">
       <h2>学生管理系统 - 登录</h2>
       <el-form ref="formRef" :model="loginForm" :rules="rules" label-width="0px" class="md-form">
         <el-form-item prop="username">
@@ -33,14 +37,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import request from '../api/request'
 import { ElMessage } from 'element-plus'
 // 👇 1. 新增：引入 vue-router 的路由跳转工具
 import { useRouter } from 'vue-router'
+import LegoLoader from '../components/LegoLoader.vue'
 
 // 👇 2. 新增：召唤路由管家实例
 const router = useRouter()
+
+// 闪屏控制
+const showSplash = ref(true)
+
+onMounted(() => {
+  // 模拟系统自检/资源预加载，时长延长至 4.5s 增强沉浸感
+  setTimeout(() => {
+    showSplash.value = false
+  }, 4500)
+})
 
 // 获取表单和密码输入框的引用
 const formRef = ref()
@@ -120,6 +135,14 @@ const handleLogin = async () => {
   background-color: var(--bg-secondary);
   position: relative;
   overflow: hidden;
+}
+
+/* 渐变淡出 */
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+.fade-leave-to {
+  opacity: 0;
 }
 
 .login-container::before {
