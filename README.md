@@ -59,6 +59,32 @@ npm run dev
 
 ---
 
+# 🧪 无需数据库快速测试
+
+如果没有安装 MySQL，可以使用 H2 内存数据库快速测试整个系统：
+
+```bash
+# 1. 克隆两个仓库
+git clone https://github.com/SHUI-yer/student-server.git
+git clone https://github.com/SHUI-yer/student_client.git
+
+# 2. 启动后端（使用 H2 内存数据库，无需 MySQL）
+cd student-server
+.\mvnw spring-boot:run -Dspring-boot.run.profiles=h2
+
+# 3. 启动前端（新终端）
+cd student_client
+npm install
+npm run dev
+
+# 4. 访问系统
+# 打开浏览器 http://localhost:5173
+```
+
+> 💡 H2 会自动初始化测试数据（8个学生、6门课程、19条成绩）
+
+---
+
 # ✨ 核心视觉与交互亮点 (UI/UX Highlights)
 
 - **Material Design 3 极致重构**: 建立了标准的三级灰阶背景体系 (`#000000 / #1C1C1E / #2C2C2E`)，确保在暗黑模式下拥有极致的物理纵深感与视觉沉浸。
