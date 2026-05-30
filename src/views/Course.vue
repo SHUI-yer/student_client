@@ -180,7 +180,8 @@ import { Search, Plus, Refresh, ArrowDown, QuestionFilled } from '@element-plus/
 import EmptyState from '../components/EmptyState.vue'
 import type { Course, ApiResponse, PageResult } from '../types'
 
-// 1. 基础状态
+const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
+
 const loading = ref(false)
 const submitting = ref(false)
 const tableData = ref<Course[]>([])
@@ -328,17 +329,16 @@ const handleDelete = (row: Course) => {
   }).catch(() => {})
 }
 
-// 5. Excel 操作
 const downloadTemplate = () => {
-  window.open('http://localhost:8080/api/excel/template/course', '_blank')
+  window.open(`${API_BASE}/api/excel/template/course`, '_blank')
 }
 
 const exportData = () => {
-  window.open('http://localhost:8080/api/excel/export/course', '_blank')
+  window.open(`${API_BASE}/api/excel/export/course`, '_blank')
 }
 
 const handleFilteredExport = () => {
-  let url = 'http://localhost:8080/api/excel/export/course?'
+  let url = `${API_BASE}/api/excel/export/course?`
   if (filterSemester.value) url += `semester=${encodeURIComponent(filterSemester.value)}&`
   if (filterTeacher.value) url += `teacher=${encodeURIComponent(filterTeacher.value)}&`
   window.open(url, '_blank')

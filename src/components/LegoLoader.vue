@@ -62,29 +62,29 @@
 .block-2 {
   background-color: var(--md-secondary);
   top: 0;
-  right: 0;
-  animation-delay: 0.6s;
+  left: 0;
+  animation-delay: -1.8s;
 }
 
 .block-3 {
   background-color: #00897b;
-  bottom: 0;
-  right: 0;
-  animation-delay: 1.2s;
+  top: 0;
+  left: 0;
+  animation-delay: -1.2s;
 }
 
 .block-4 {
   background-color: #ffb300;
-  bottom: 0;
+  top: 0;
   left: 0;
-  animation-delay: 1.8s;
+  animation-delay: -0.6s;
 }
 
 @keyframes move {
   0%, 100% { transform: translate(0, 0); z-index: 1; }
-  25% { transform: translate(56px, 0); z-index: 2; }
+  25% { transform: translate(0, 56px); z-index: 2; }
   50% { transform: translate(56px, 56px); z-index: 1; }
-  75% { transform: translate(0, 56px); z-index: 2; }
+  75% { transform: translate(56px, 0); z-index: 2; }
 }
 
 /* 精细化打字机与光标效果 */

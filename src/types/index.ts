@@ -18,6 +18,34 @@ export interface Course {
   semester: string;
 }
 
+export interface Score {
+  id?: number;
+  studentId?: number;
+  courseId?: number;
+  score?: number;
+  originalScore: number;
+}
+
+export interface ScoreVO {
+  id: number;
+  studentName: string;
+  studentNumber: string;
+  major: string;
+  courseName: string;
+  courseNumber: string;
+  credit: number;
+  score: number;
+  originalScore: number;
+  studentId: number;
+  courseId: number;
+}
+
+export interface ScorePageParams {
+  pageNum: number;
+  pageSize: number;
+  keyword?: string;
+}
+
 export interface ApiResponse<T> {
   code: number;
   message: string;

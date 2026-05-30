@@ -184,13 +184,15 @@ import { ArrowDown, QuestionFilled } from '@element-plus/icons-vue'
 import EmptyState from '../components/EmptyState.vue'
 import { getScorePage, saveScore, deleteScore, getAllStudents, getAllCourses } from '../api/score'
 import request from '../api/request'
+import type { ScoreVO, Student, Course } from '../types'
 
-// -- 变量定义 --
+const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
+
 const loading = ref(false)
-const tableData = ref([])
+const tableData = ref<ScoreVO[]>([])
 const total = ref(0)
-const studentList = ref<any[]>([])
-const courseList = ref<any[]>([])
+const studentList = ref<Student[]>([])
+const courseList = ref<Course[]>([])
 const excelInput = ref<HTMLInputElement | null>(null)
 
 // 导出筛选相关
@@ -200,7 +202,7 @@ const filterStudentNumber = ref('')
 const filterCourseNumber = ref('')
 
 const uniqueMajors = computed(() => {
-  const majors = tableData.value.map((s: any) => s.major).filter(Boolean)
+  const majors = tableData.value.map(s => s.major).filter(Boolean)
   return Array.from(new Set(majors))
 })
 
@@ -234,7 +236,7 @@ const maxScore = computed(() => {
 })
 
 // 自定义成绩校验器
-const validateScore = (_rule: any, value: any, callback: any) => {
+const validateScore = (_rule: unknown, value: number | undefined, callback: (error?: Error) => void) => {
   if (value === undefined || value === null) {
     callback(new Error('请输入成绩'))
   } else if (value > 100) {
@@ -257,7 +259,7 @@ const rules = reactive<FormRules>({
 const loadData = async () => {
   loading.value = true
   try {
-    const res: any = await getScorePage({
+    const res = await getScorePage({
       ...pageParams,
       keyword: searchForm.keyword
     })
@@ -276,7 +278,7 @@ const loadData = async () => {
 
 const loadOptions = async () => {
   try {
-    const [stuRes, curRes]: any = await Promise.all([getAllStudents(), getAllCourses()])
+    const [stuRes, curRes] = await Promise.all([getAllStudents(), getAllCourses()])
     if (stuRes.code === 200) studentList.value = stuRes.data
     if (curRes.code === 200) courseList.value = curRes.data
   } catch (error) {
@@ -316,7 +318,7 @@ const handleAdd = () => {
   dialogVisible.value = true
 }
 
-const handleEdit = (row: any) => {
+const handleEdit = (row: ScoreVO) => {
   dialogTitle.value = '编辑成绩'
   Object.assign(formData, {
     id: row.id,
@@ -335,7 +337,7 @@ const handleDelete = (id: number) => {
     type: 'warning'
   }).then(async () => {
     try {
-      const res: any = await deleteScore(id)
+      const res = await deleteScore(id)
       if (res.code === 200) {
         ElMessage.success('删除成功')
         loadData()
@@ -354,7 +356,7 @@ const submitForm = async () => {
     if (valid) {
       submitLoading.value = true
       try {
-        const res: any = await saveScore(formData)
+        const res = await saveScore(formData)
         if (res.code === 200) {
           ElMessage.success('保存成功')
           dialogVisible.value = false
@@ -362,8 +364,9 @@ const submitForm = async () => {
         } else {
           ElMessage.error(res.message || '保存失败')
         }
-      } catch (error: any) {
-        ElMessage.error(error.response?.data?.message || error.message || '保存失败')
+      } catch (error) {
+        const err = error as Error
+        ElMessage.error(err.message || '保存失败')
       } finally {
         submitLoading.value = false
       }
@@ -372,11 +375,11 @@ const submitForm = async () => {
 }
 
 const exportScore = () => {
-  window.open('http://localhost:8080/api/excel/export/score', '_blank')
+  window.open(`${API_BASE}/api/excel/export/score`, '_blank')
 }
 
 const handleFilteredExport = () => {
-  let url = 'http://localhost:8080/api/excel/export/score?'
+  let url = `${API_BASE}/api/excel/export/score?`
   if (filterMajor.value) url += `major=${encodeURIComponent(filterMajor.value)}&`
   if (filterStudentNumber.value) url += `studentNumber=${encodeURIComponent(filterStudentNumber.value)}&`
   if (filterCourseNumber.value) url += `courseNumber=${encodeURIComponent(filterCourseNumber.value)}&`
@@ -385,7 +388,7 @@ const handleFilteredExport = () => {
 }
 
 const downloadTemplate = () => {
-  window.open('http://localhost:8080/api/excel/template/score', '_blank')
+  window.open(`${API_BASE}/api/excel/template/score`, '_blank')
 }
 
 const triggerImport = () => {
@@ -396,14 +399,14 @@ const handleImport = async (e: Event) => {
   const files = (e.target as HTMLInputElement).files
   if (!files || files.length === 0) return
 
-  const formData = new FormData()
-  formData.append('file', files[0])
+  const importData = new FormData()
+  importData.append('file', files[0])
 
   loading.value = true
   try {
-    const res = await request.post('/api/excel/import/score', formData, {
+    const res = await request.post('/api/excel/import/score', importData, {
       headers: { 'Content-Type': 'multipart/form-data' }
-    }) as any
+    }) as { code: number; message?: string }
     if (res.code === 200) {
       ElMessage.success('成绩数据导入成功')
       loadData()

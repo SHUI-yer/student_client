@@ -1,10 +1,9 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import router from '../router' // 引入我们昨天建好的路由管家
+import router from '../router'
 
-// 1. 创建 Axios 实例
 const request = axios.create({
-    baseURL: 'http://localhost:8080', // 后端地址
+    baseURL: import.meta.env.VITE_API_BASE_URL || '',
     timeout: 5000
 })
 

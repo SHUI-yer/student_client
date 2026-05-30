@@ -100,9 +100,9 @@
             <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column label="头像" width="80" align="center">
           <template #default="scope">
-            <el-avatar 
-              :size="40" 
-              :src="scope.row.avatarUrl ? `http://localhost:8080${scope.row.avatarUrl}` : 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" 
+            <el-avatar
+              :size="40"
+              :src="scope.row.avatarUrl ? `${API_BASE}${scope.row.avatarUrl}` : 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'"
             />
           </template>
         </el-table-column>
@@ -159,13 +159,13 @@
         <el-form-item label="学生头像">
           <el-upload
             class="avatar-uploader"
-            action="http://localhost:8080/api/file/upload"
+            :action="`${API_BASE}/api/file/upload`"
             :show-file-list="false"
             :on-success="handleAvatarSuccess"
             :before-upload="beforeAvatarUpload"
             :headers="uploadHeaders"
           >
-            <img v-if="form.avatarUrl" :src="`http://localhost:8080${form.avatarUrl}`" class="avatar" />
+            <img v-if="form.avatarUrl" :src="`${API_BASE}${form.avatarUrl}`" class="avatar" />
             <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
           </el-upload>
         </el-form-item>
@@ -211,7 +211,8 @@ import { Search, Plus, Refresh, ArrowDown, QuestionFilled } from '@element-plus/
 import EmptyState from '../components/EmptyState.vue'
 import type { Student, ApiResponse, PageResult } from '../types'
 
-// 1. 基础状态
+const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
+
 const loading = ref(false)
 const submitting = ref(false)
 const tableData = ref<Student[]>([])
@@ -393,17 +394,16 @@ const handleDelete = (row: Student) => {
   }).catch(() => {})
 }
 
-// 5. Excel 操作
 const downloadTemplate = () => {
-  window.open('http://localhost:8080/api/excel/template/student', '_blank')
+  window.open(`${API_BASE}/api/excel/template/student`, '_blank')
 }
 
 const exportData = () => {
-  window.open('http://localhost:8080/api/excel/export/student', '_blank')
+  window.open(`${API_BASE}/api/excel/export/student`, '_blank')
 }
 
 const handleFilteredExport = () => {
-  let url = 'http://localhost:8080/api/excel/export/student?'
+  let url = `${API_BASE}/api/excel/export/student?`
   if (filterMajor.value) url += `major=${encodeURIComponent(filterMajor.value)}&`
   if (filterClass.value) url += `className=${encodeURIComponent(filterClass.value)}&`
   window.open(url, '_blank')
